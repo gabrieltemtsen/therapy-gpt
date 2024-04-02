@@ -23,8 +23,13 @@
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.65.1",
+    "openai": "^4.31.0",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "weavedb-sdk-node": "^0.39.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
