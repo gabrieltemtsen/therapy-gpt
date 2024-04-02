@@ -47,7 +47,19 @@ export class TelegramService {
   };
   onReceiveMessage = async (msg: Message) => {
     const userId = msg.chat.id;
-    const reply = await this.aiHandler.chatWithAI(msg, userId, msg.text);
-    await this.botService.sendMessage(msg, userId, reply);
+    const name = msg.chat.first_name;
+    if (name) {
+      const user = await this.databaseService.updateUser(userId, name);
+    } else {
+      await this.botService.sendMessage(
+        msg,
+        userId,
+        'Please provide your name',
+      );
+      const name = msg.text;
+      const user = await this.databaseService.updateUser(userId, name);
+    }
+    //   const reply = await this.aiHandler.chatWithAI(msg, userId, msg.text);
+    //   await this.botService.sendMessage(msg, userId, reply);
   };
 }

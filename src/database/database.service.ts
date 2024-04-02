@@ -1,48 +1,110 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
 import * as dotenv from 'dotenv';
-import WeaveDB from 'weavedb-sdk-node';
+import { Database } from '@tableland/sdk';
+import { jsonFileAliases } from '@tableland/node-helpers';
+import { Wallet, getDefaultProvider } from 'ethers';
+
 dotenv.config();
 
-const WEAVEDB_CONTRACT_TX_ID = process.env.CONTRACT_TX_ID;
+interface UserTableSchema {
+  id: number;
+  name: string;
+  telegramId: string;
+}
+// async function main() {
+//   const privateKey: any = process.env.PRIVATE_KEY;
+//   const rpc: any = process.env.RPC_URL;
+
+//   const wallet = new Wallet(privateKey);
+//   const provider: any = getDefaultProvider(rpc);
+//   const signer: any = wallet.connect(provider);
+//   interface Schema {
+//     id: number;
+//     messages: Text; // Define messages as an array of objects
+//     telegramId: string;
+//   }
+
+//   const db = new Database<Schema>({
+//     signer: signer,
+//     aliases: jsonFileAliases('./tableland.aliases.json'),
+//   });
+
+//   const prefix: string = 'conversations';
+
+//   const { meta: create } = await db
+//     .prepare(
+//       `CREATE TABLE ${prefix} (id INTEGER PRIMARY KEY, messages TEXT, telegramId TEXT);`,
+//     )
+//     .run();
+
+//   console.log(create.txn?.name);
+//   console.log('INSERTED');
+
+//   const users_table = 'users_11155111_1470';
+//   const conversations_table = 'conversations_11155111_1471';
+// }
+
+// main();
+const users_table = 'users_11155111_1470';
+const conversations_table = 'conversations_11155111_1471';
 
 @Injectable()
 export class DatabaseService {
   private db: any;
 
-  //   constructor() {
-  //     this.db = new (WeaveDB as any)({
-  //       contractTxId: WEAVEDB_CONTRACT_TX_ID,
-  //       wallet: '0x7231D8CCF0bcF5678dB30730EfE18F21d520C379',
-  //       old: true,
-  //       network: 'mainnet'
-  //     });
-  //     this.initDatabase(); // Call the initialization method
-  //   }
+  constructor() {
+    const privateKey: any = process.env.PRIVATE_KEY;
+    const rpc: any = process.env.RPC_URL;
 
-  private async initDatabase(): Promise<void> {
+    const wallet = new Wallet(privateKey);
+    const provider: any = getDefaultProvider(rpc);
+    const signer: any = wallet.connect(provider);
+
+    this.db = new Database<any>({
+      signer: signer,
+      aliases: jsonFileAliases('./tableland.aliases.json'),
+    });
+  }
+  // async createTable() {
+  //   console.log('hehehehehe')
+  //   const prefix: string = 'test';
+
+  //   const { meta: create } = await this.db
+  //     .prepare(
+  //       `CREATE TABLE ${prefix} (id INTEGER PRIMARY KEY, messages TEXT, telegramId TEXT);`,
+  //     )
+  //     .run();
+
+  //   console.log(create.txn?.name);
+  //   console.log('INSERTED');
+  // }
+
+  async updateUser(telegramId: string, name: string): Promise<void> {
     try {
-      await this.db.init();
-      console.log('Database initialized successfully');
+      const { results } = await this.db
+        .prepare(
+          `SELECT * FROM ${users_table} WHERE telegramId == ${telegramId};`,
+        )
+        .run();
+
+      console.log(results);
+
+      if (!results) {
+        console.log('nana');
+        await this.db
+          .prepare(
+            `INSERT INTO ${users_table} (name, telegramId) VALUES (?, ?);`,
+          )
+          .bind(name, telegramId)
+          .run();
+        console.log('New user created successfully.');
+      } else {
+        console.log(results);
+        console.log('User already exists.');
+      }
     } catch (error) {
-      console.error('Error initializing database:', error);
+      console.error('Error creating user:', error);
     }
   }
-
-  //   public async updateUser(telegramId: string, userInfo?: any): Promise<void> {
-  //     try {
-  //       const personData = { name: 'Bob', age: 20 };
-  //       const tx = await this.db.add(personData, 'users');
-  //       console.log('TX: ', tx);
-  //       const user = await this.db.get('users');
-  //       console.log('USERS: ', user, userInfo);
-  //       //   if (user.) {
-  //       //     await this.db.update(telegramId, userInfo);
-  //       //   } else {
-  //       //     await this.db.create(telegramId, userInfo);
-  //       //   }
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   }
 }
