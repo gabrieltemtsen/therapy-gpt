@@ -90,7 +90,7 @@ export class DatabaseService {
 
       console.log(results);
 
-      if (!results) {
+      if (results.length === 0) {
         console.log('nana');
         await this.db
           .prepare(
@@ -105,6 +105,75 @@ export class DatabaseService {
       }
     } catch (error) {
       console.error('Error creating user:', error);
+    }
+  }
+  async saveMessage(telegramId: string, message: any): Promise<void> {
+    try {
+      // Check if conversation exists
+      console.log('Message: ', message);
+      const { results } = await this.db
+        .prepare(
+          `SELECT * FROM ${conversations_table} WHERE telegramId == ${telegramId};`,
+        )
+        .all();
+      console.log('Results: ', results);
+
+      if (results.length === 0) {
+        // If conversation does not exist, create a new one
+        const { meta: insert } = await this.db
+          .prepare(
+            `INSERT INTO ${conversations_table} (telegramId, messages) VALUES (?, ?);`,
+          )
+          .bind(telegramId,JSON.stringify([{ user: message.user, bot: message.bot }]))
+          .run();
+        await insert.txn?.wait();
+      } else {
+        // If conversation exists, append message to existing messages
+        console.log('convo exists');
+
+        const conversation = results[0];
+        console.log('Convo: ', conversation);
+        const existingMessages = JSON.parse(conversation.messages);
+        existingMessages.push({ user: message.user, bot: message.bot });
+
+        await this.db
+          .prepare(
+            `UPDATE ${conversations_table} SET messages = ? WHERE id = ?;`,
+          )
+          .bind(JSON.stringify(existingMessages), conversation.id)
+          .run();
+      }
+
+      console.log('Message saved successfully.');
+    } catch (error) {
+      console.error('Error saving message:', error);
+    }
+  }
+
+  async getMessagesByTelegramId(telegramId: string): Promise<string[]> {
+    try {
+      const { results } = await this.db
+        .prepare(
+          `SELECT messages FROM ${conversations_table} WHERE telegramId == ${telegramId};`,
+        )
+        .all();
+
+      if (results && results.length > 0) {
+        const messages = [];
+
+        results.map((result: any) => {
+          messages.push(result.messages);
+        });
+
+        console.log('Messages:', messages);
+        return messages;
+      } else {
+        console.log('No messages found for the given telegramId.');
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      return [];
     }
   }
 }

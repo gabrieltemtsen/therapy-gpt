@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { BotService } from './bot.service';
@@ -47,19 +48,22 @@ export class TelegramService {
   };
   onReceiveMessage = async (msg: Message) => {
     const userId = msg.chat.id;
-    const name = msg.chat.first_name;
-    if (name) {
-      const user = await this.databaseService.updateUser(userId, name);
-    } else {
-      await this.botService.sendMessage(
-        msg,
-        userId,
-        'Please provide your name',
-      );
-      const name = msg.text;
-      const user = await this.databaseService.updateUser(userId, name);
-    }
-    //   const reply = await this.aiHandler.chatWithAI(msg, userId, msg.text);
-    //   await this.botService.sendMessage(msg, userId, reply);
+    const name = msg.chat.username || 'Anonymous';
+    console.log(name);
+
+    const user = await this.databaseService.updateUser(userId, name);
+    const userMessage =
+      await this.databaseService.getMessagesByTelegramId(userId);
+      let history = [];
+    const { replyUser, message, response } = await this.aiHandler.chatWithAI(
+      msg,
+      userId,
+      msg.text,
+      history,
+    );
+    history.push(response)
+    await this.botService.sendMessage(msg, userId, replyUser);
+
+    const saveMessage = await this.databaseService.saveMessage(userId, message);
   };
 }
