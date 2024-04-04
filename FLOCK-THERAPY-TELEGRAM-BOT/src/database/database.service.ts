@@ -63,7 +63,6 @@ export class DatabaseService {
 
     this.db = new Database<any>({
       signer: signer,
-      aliases: jsonFileAliases('./tableland.aliases.json'),
     });
   }
   // async createTable() {
@@ -124,7 +123,10 @@ export class DatabaseService {
           .prepare(
             `INSERT INTO ${conversations_table} (telegramId, messages) VALUES (?, ?);`,
           )
-          .bind(telegramId,JSON.stringify([{ user: message.user, bot: message.bot }]))
+          .bind(
+            telegramId,
+            JSON.stringify([{ user: message.user, bot: message.bot }]),
+          )
           .run();
         await insert.txn?.wait();
       } else {
